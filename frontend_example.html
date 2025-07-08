@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面试助手 - 雷达图展示</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-section {
+            margin-bottom: 30px;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        .input-section textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+        }
+        .btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.3);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .response-text {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .scores-section {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .score-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .score-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .chart-section {
+            text-align: center;
+            background: #fff8e1;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 面试助手雷达图展示</h1>
+        
+        <div class="input-section">
+            <label for="queryInput">请输入面试相关问题或回答：</label>
+            <textarea id="queryInput" placeholder="例如：请评价我的技术能力和沟通表达...">你好，我是人工智能专业应届毕业生，具有扎实的机器学习理论基础</textarea>
+            <br><br>
+            <button class="btn" onclick="callAPI()" id="submitBtn">📊 获取评价和雷达图</button>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h3>📋 评价结果</h3>
+            <div id="responseText" class="response-text"></div>
+            
+            <div id="scoresSection" class="scores-section" style="display: none;">
+                <h4>📊 详细评分</h4>
+                <div id="scoresGrid" class="scores-grid"></div>
+            </div>
+            
+            <div id="chartSection" class="chart-section" style="display: none;">
+                <h4>📈 能力雷达图</h4>
+                <img id="chartImage" class="chart-image" alt="能力雷达图" />
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function callAPI() {
+            const query = document.getElementById('queryInput').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const resultSection = document.getElementById('resultSection');
+            const responseText = document.getElementById('responseText');
+            const scoresSection = document.getElementById('scoresSection');
+            const chartSection = document.getElementById('chartSection');
+            
+            if (!query) {
+                alert('请输入问题或回答内容');
+                return;
+            }
+            
+            // 显示加载状态
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ 正在处理...';
+            resultSection.style.display = 'block';
+            responseText.innerHTML = '<div class="loading">正在调用AI服务，请稍候...</div>';
+            scoresSection.style.display = 'none';
+            chartSection.style.display = 'none';
+            
+                         try {
+                // 调用真实的后端API
+                const mockResponse = await realAPICall(query);
+                
+                // 显示响应文本
+                responseText.innerHTML = mockResponse.text;
+                
+                // 如果有评分数据，显示评分和雷达图
+                if (mockResponse.scores) {
+                    displayScores(mockResponse.scores);
+                    scoresSection.style.display = 'block';
+                    
+                    if (mockResponse.chart_base64) {
+                        displayChart(mockResponse.chart_base64);
+                        chartSection.style.display = 'block';
+                    }
+                }
+                
+            } catch (error) {
+                responseText.innerHTML = `<div class="error">调用失败: ${error.message}</div>`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📊 获取评价和雷达图';
+            }
+        }
+        
+        // 真实的API调用函数
+        async function realAPICall(query) {
+            const response = await fetch('/api/interview-evaluation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: query
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+        
+        // 模拟API调用 - 备用函数（注释掉）
+        /*
+        async function simulateAPICall(query) {
+            // 模拟网络延迟
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // 模拟包含评分的响应
+            const mockResponse = {
+                text: `基于您的回答分析，作为人工智能专业的应届毕业生，您展现出了良好的专业基础。您的总分为：专业能力16分，逻辑分析问题能力15分，沟通表达能力14分，团队协作能力16分，学习意愿18分，总分79分。建议继续加强实践经验和沟通技巧。`,
+                scores: {
+                    "专业能力": 16,
+                    "逻辑分析问题能力": 15,
+                    "沟通表达能力": 14,
+                    "团队协作能力": 16,
+                    "学习意愿": 18,
+                    "总分": 79
+                },
+                chart_base64: "iVBORw0KGgoAAAANSUhEUgAAA..." // 这里应该是真实的base64图片数据
+            };
+            
+            return mockResponse;
+        }
+        */
+        
+        function displayScores(scores) {
+            const scoresGrid = document.getElementById('scoresGrid');
+            scoresGrid.innerHTML = '';
+            
+            // 排除总分，只显示各项能力
+            const abilities = Object.entries(scores).filter(([key]) => key !== '总分');
+            
+            abilities.forEach(([ability, score]) => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                scoreItem.innerHTML = `
+                    <div class="score-value">${score}/20</div>
+                    <div class="score-label">${ability}</div>
+                `;
+                scoresGrid.appendChild(scoreItem);
+            });
+            
+            // 添加总分
+            if (scores['总分']) {
+                const totalItem = document.createElement('div');
+                totalItem.className = 'score-item';
+                totalItem.style.gridColumn = 'span 2';
+                totalItem.innerHTML = `
+                    <div class="score-value" style="color: #28a745;">${scores['总分']}/100</div>
+                    <div class="score-label">总分</div>
+                `;
+                scoresGrid.appendChild(totalItem);
+            }
+        }
+        
+        function displayChart(base64Data) {
+            const chartImage = document.getElementById('chartImage');
+            chartImage.src = `data:image/png;base64,${base64Data}`;
+        }
+
+    </script>
+</body>
+</html> 
